@@ -95,17 +95,13 @@ export default class HoarderPlugin extends Plugin {
       ?.secretStorage;
     const setSecretFn =
       storage &&
-      (typeof (storage as { setSecret?: (k: string, v: string) => Promise<void> }).setSecret ===
+      typeof (storage as { setSecret?: (k: string, v: string) => Promise<void> }).setSecret ===
         "function"
-        ? (storage as { setSecret: (k: string, v: string) => Promise<void> }).setSecret.bind(storage)
-        : typeof (storage as { set?: (k: string, v: string) => Promise<void> }).set === "function"
-          ? (storage as { set: (k: string, v: string) => Promise<void> }).set.bind(storage)
-          : null);
-    if (
-      this.settings.apiKey &&
-      !this.settings.apiKeySecretName &&
-      setSecretFn
-    ) {
+        ? (storage as { setSecret: (k: string, v: string) => Promise<void> }).setSecret.bind(
+            storage
+          )
+        : null;
+    if (this.settings.apiKey && !this.settings.apiKeySecretName && setSecretFn) {
       try {
         const secretName = "hoarder-sync-karakeep-api-key";
         await setSecretFn(secretName, this.settings.apiKey);
@@ -113,7 +109,8 @@ export default class HoarderPlugin extends Plugin {
         this.settings.apiKey = "";
         await this.saveData(this.settings);
       } catch (migErr) {
-        throw migErr;
+        console.error("[Hoarder] Failed to migrate API key to secure storage:", migErr);
+        // Bail out of migration gracefully without wiping existing key
       }
     }
   }
@@ -124,14 +121,13 @@ export default class HoarderPlugin extends Plugin {
       ?.secretStorage;
     const getSecretFn =
       storage &&
-      (typeof (storage as { getSecret?: (k: string) => Promise<string | undefined> }).getSecret ===
+      typeof (storage as { getSecret?: (k: string) => Promise<string | undefined> }).getSecret ===
         "function"
         ? (storage as { getSecret: (k: string) => Promise<string | undefined> }).getSecret.bind(
             storage
           )
-        : typeof (storage as { get?: (k: string) => Promise<string | undefined> }).get === "function"
-          ? (storage as { get: (k: string) => Promise<string | undefined> }).get.bind(storage)
-          : null);
+        : null;
+
     if (this.settings.apiKeySecretName && getSecretFn) {
       const value = await getSecretFn(this.settings.apiKeySecretName);
       return value ?? "";

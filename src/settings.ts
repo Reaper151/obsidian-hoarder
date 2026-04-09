@@ -1,16 +1,15 @@
 import * as Obsidian from "obsidian";
 import { AbstractInputSuggest, App, Notice, PluginSettingTab, Setting, TFolder } from "obsidian";
 
+import HoarderPlugin from "./main";
+
 /** Obsidian Keychain API (optional in older versions). Types may not be in @types. */
 type SecretComponentCtor = new (
   app: App,
   el: HTMLElement
 ) => { setValue(v: string): unknown; onChange(fn: (v: string) => void): unknown };
-const SecretComponent = (
-  Obsidian as unknown as { SecretComponent?: SecretComponentCtor }
-).SecretComponent as SecretComponentCtor | undefined;
-
-import HoarderPlugin from "./main";
+const SecretComponent = (Obsidian as unknown as { SecretComponent?: SecretComponentCtor })
+  .SecretComponent as SecretComponentCtor | undefined;
 
 export interface HoarderSettings {
   /** @deprecated Use apiKeySecretName and Obsidian Keychain instead. Kept for migration fallback. */
@@ -150,7 +149,7 @@ export class HoarderSettingTab extends PluginSettingTab {
       typeof settingWithAddComponent.addComponent === "function"
     ) {
       apiKeySetting.setDesc(
-        "Select or create a secret in Obsidian's Keychain (Settings → Keychain). Your API key is stored securely and not in plain text."
+        "Select your Hoarder API key from Obsidian's Keychain. Note: You must first create this API key in Obsidian's main Settings → 'Keychain' before it will appear here. Requires Obsidian v1.11.7 or higher."
       );
       settingWithAddComponent.addComponent!((el: HTMLElement): void => {
         // Obsidian types may not expose SecretComponent; safe at runtime when typeof check passes
@@ -167,18 +166,16 @@ export class HoarderSettingTab extends PluginSettingTab {
       });
     } else {
       // Fallback for older Obsidian versions without SecretComponent / addComponent
-      apiKeySetting
-        .setDesc("Your Hoarder API key")
-        .addText((text) =>
-          text
-            .setPlaceholder("Enter your API key")
-            .setValue(this.plugin.settings.apiKey ?? "")
-            .onChange(async (value: string) => {
-              this.plugin.settings.apiKey = value;
-              await this.plugin.saveSettings();
-            })
-            .inputEl.addClass("hoarder-wide-input")
-        );
+      apiKeySetting.setDesc("Your Hoarder API key").addText((text) =>
+        text
+          .setPlaceholder("Enter your API key")
+          .setValue(this.plugin.settings.apiKey ?? "")
+          .onChange(async (value: string) => {
+            this.plugin.settings.apiKey = value;
+            await this.plugin.saveSettings();
+          })
+          .inputEl.addClass("hoarder-wide-input")
+      );
     }
 
     new Setting(containerEl)
